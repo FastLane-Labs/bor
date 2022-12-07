@@ -83,6 +83,13 @@ var (
 
 	errInsertionInterrupted = errors.New("insertion is interrupted")
 	errChainStopped         = errors.New("blockchain is stopped")
+
+	serialGasTimer0   = metrics.NewRegisteredTimer("chain/serialGas", nil)
+	parallelGasTimer0 = metrics.NewRegisteredTimer("chain/parallelGas", nil)
+
+	serialGasTimer           = metrics.NewRegisteredTimer("chain/serialGas", nil)
+	parallelGasTimer         = metrics.NewRegisteredTimer("chain/parallelGas", nil)
+	parallelMetadataGasTimer = metrics.NewRegisteredTimer("chain/parallelMetadataGas", nil)
 )
 
 const (
@@ -207,12 +214,15 @@ type BlockChain struct {
 	running       int32          // 0 if chain is running, 1 when stopped
 	procInterrupt int32          // interrupt signaler for block processing
 
-	engine     consensus.Engine
-	validator  Validator // Block and state validator interface
-	prefetcher Prefetcher
-	processor  Processor // Block transaction processor interface
-	forker     *ForkChoice
-	vmConfig   vm.Config
+	engine          consensus.Engine
+	validator       Validator // Block and state validator interface
+	prefetcher      Prefetcher
+	processor       Processor // Block transaction processor interface
+	processorSTM    Processor
+	processorSTMGet Processor
+	processorSTMUse Processor
+	forker          *ForkChoice
+	vmConfig        vm.Config
 
 	// Bor related changes
 	borReceiptsCache *lru.Cache             // Cache for the most recent bor receipt receipts per block
@@ -270,6 +280,9 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
 	bc.processor = NewStateProcessor(chainConfig, bc, engine)
+	bc.processorSTM = NewParallelStateProcessor(chainConfig, bc, engine)
+	bc.processorSTMGet = NewParallelStateProcessorProfile(chainConfig, bc, engine)
+	bc.processorSTMUse = NewParallelStateProcessorUse(chainConfig, bc, engine)
 
 	var err error
 	bc.hc, err = NewHeaderChain(db, chainConfig, engine, bc.insertStopped)
@@ -1741,9 +1754,60 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals, setHead bool)
 			}
 		}
 
-		// Process block using the parent state as reference point
-		substart := time.Now()
-		receipts, logs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig)
+		tempHeader := block.Header()
+
+		var substart time.Time
+		var receipts types.Receipts
+		var logs []*types.Log
+		var usedGas uint64
+
+		statedbSTMGet := statedb.Copy()
+		statedbSTMUse := statedb.Copy()
+
+		log.Info("\nProcessing block", "blockNumber", block.Number())
+		if new(big.Int).Rem(block.Number(), big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
+			log.Info("Processing block Serial", "blockNumber", block.Number())
+			substart = time.Now()
+			receipts, logs, usedGas, err = bc.processor.Process(block, statedb, bc.vmConfig)
+			substop := time.Now()
+			serialGasTimer0.Update(substop.Sub(substart))
+
+			log.Info("**** Serial - Process block time", "blockNumber", block.Number(), "transactions", block.Transactions().Len(), "Time", substop.Sub(substart))
+		} else {
+			log.Info("Processing block Parallel", "blockNumber", block.Number())
+			substart = time.Now()
+			receipts, logs, usedGas, err = bc.processorSTM.Process(block, statedb, bc.vmConfig)
+			substop := time.Now()
+			parallelGasTimer0.Update(substop.Sub(substart))
+
+			log.Info("**** Parallel - Process block time", "blockNumber", block.Number(), "transactions", block.Transactions().Len(), "Time", substop.Sub(substart))
+		}
+
+		if block.Transactions().Len() >= 0 {
+			receipts, logs, usedGas, err = bc.processorSTMGet.Process(block, statedbSTMGet, bc.vmConfig)
+
+			t6 := time.Now()
+			receipts, logs, usedGas, err = bc.processorSTMUse.Process(block, statedbSTMUse, bc.vmConfig)
+			t7 := time.Now()
+			parallelMetadataGasTimer.Update(time.Since(t6))
+
+			log.Info("**** Parallel with dependency - Process block time", "blockNumber", block.Number(), "transactions", block.Transactions().Len(), "STM with dependency", t7.Sub(t6))
+
+			if parallelMetadataGasTimer.Count()%50 == 0 {
+				log.Info("Histogram of processing time", "serial", serialGasTimer0.Percentiles([]float64{0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 0.9999}))
+				log.Info("Histogram of processing time", "parallel", parallelGasTimer0.Percentiles([]float64{0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 0.9999}))
+
+				log.Info("Average processing time for serial, and parallel", "serial", time.Duration(serialGasTimer0.Mean()), "parallel", time.Duration(parallelGasTimer0.Mean()))
+				log.Info("Average mgasps time for serial, and parallel", "serial", serialGasTimer0.Mean(), "parallel", parallelGasTimer0.Mean())
+
+				log.Info("Histogram of processing time", "parallel metadata", parallelMetadataGasTimer.Percentiles([]float64{0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 0.9999}))
+
+				log.Info("Average processing time for parallel metadata processing", "parallel metadata", time.Duration(parallelMetadataGasTimer.Mean()))
+			}
+		}
+
+		block.HeaderWithoutCopy().TxDependency = tempHeader.TxDependency
+
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			atomic.StoreUint32(&followupInterrupt, 1)
