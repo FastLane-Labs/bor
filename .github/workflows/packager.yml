@@ -12,9 +12,7 @@ on:
 
 jobs:
   build:
-    runs-on:
-      group: ubuntu-runners
-      labels: 18.04RunnerT2Large
+    runs-on: 18.04RunnerT2Large
     steps:
       - name: Checkout
         uses: actions/checkout@v2
