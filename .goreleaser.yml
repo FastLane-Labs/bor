@@ -69,7 +69,7 @@ builds:
       -s -w -extldflags "-static"
 
 nfpms:
-  - vendor: 0xPolygon
+  - vendor: fllephess
     homepage: https://polygon.technology
     maintainer: Polygon Team <team@polygon.technology>
     description: Polygon Blockchain
@@ -108,7 +108,7 @@ snapshot:
 
 dockers:
   - image_templates:
-      - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-amd64
+      - fllephess/{{ .ProjectName }}:{{ .Version }}-amd64
     dockerfile: Dockerfile.release
     use: buildx
     goarch: amd64
@@ -121,7 +121,7 @@ dockers:
       - builder/files/genesis-testnet-v4.json
 
   - image_templates:
-      - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-arm64
+      - fllephess/{{ .ProjectName }}:{{ .Version }}-arm64
     dockerfile: Dockerfile.release
     use: buildx
     goarch: arm64
@@ -134,18 +134,18 @@ dockers:
       - builder/files/genesis-testnet-v4.json
 
 docker_manifests:
-  - name_template: 0xpolygon/{{ .ProjectName }}:{{ .Version }}
+  - name_template: fllephess/{{ .ProjectName }}:{{ .Version }}
     image_templates:
-      - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-amd64
-      - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-arm64
+      - fllephess/{{ .ProjectName }}:{{ .Version }}-amd64
+      - fllephess/{{ .ProjectName }}:{{ .Version }}-arm64
 
-  - name_template: 0xpolygon/{{ .ProjectName }}:latest
+  - name_template: fllephess/{{ .ProjectName }}:latest
     image_templates:
-    - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-amd64
-    - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-arm64
+    - fllephess/{{ .ProjectName }}:{{ .Version }}-amd64
+    - fllephess/{{ .ProjectName }}:{{ .Version }}-arm64
 
 announce:
   slack:
-    enabled: true
+    enabled: false
     # The name of the channel that the user selected as a destination for webhook messages.
     channel: '#code-releases'
