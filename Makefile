@@ -227,7 +227,6 @@ release:
 		-e GITHUB_TOKEN \
 		-e DOCKER_USERNAME \
 		-e DOCKER_PASSWORD \
-		-e SLACK_WEBHOOK \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.docker/config.json:/root/.docker/config.json \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
