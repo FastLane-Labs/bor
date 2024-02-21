@@ -1018,16 +1018,11 @@ jobs:
           uses: actions/checkout@v4
           with:
             ref: ${{ needs.release-new-bor-version.outputs.upstream_tag }}
-        - name: Print env vars
-          run: |
-            git status
-            git tag
-            ls -l
         - name: Extract metadata for Docker
           id: meta
           uses: docker/metadata-action@v5
           with: 
-            images: santonclause/testupstream
+            images: fastlanelabs/bor-sentry-patched
             tags: |
               type=raw,value=${{ needs.release-new-bor-version.outputs.upstream_tag }}
               type=raw,value=latest
