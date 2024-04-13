@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-    UPSTREAM_PROJECT: maticnetwork/bor/
+    UPSTREAM_PROJECT: maticnetwork/bor
     ORIGIN_PROJECT: FastLane-Labs/bor
     PATCH_URL: https://raw.githubusercontent.com/FastLane-Labs/sentry-patch/main/announce_only.patch
 
