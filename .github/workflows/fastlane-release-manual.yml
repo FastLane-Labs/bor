@@ -67,7 +67,7 @@ jobs:
           git tag ${{ steps.check-upstream-tags.outputs.UPSTREAM_TAG }}
           git push origin ${{ steps.check-upstream-tags.outputs.UPSTREAM_TAG }}
 
-  push_to_dockerhub:
+  push-to-dockerhub:
     name: DockerHub build and push
     runs-on: ubuntu-latest
     needs: [release-new-bor-version]
@@ -101,13 +101,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
-  update_new_release:
+  update-new-release:
     # packager Action on master branch will build and publish a new release
     # the new release will not be tagged as latest and will be marked as pre-release
     # this step is required to tag as latest and mark as latest release
     name: Update new release
     runs-on: ubuntu-latest
-    needs: [release-new-bor-version]
+    needs: [push-to-dockerhub]
     steps:
       - name: Apply patch
         run: |
