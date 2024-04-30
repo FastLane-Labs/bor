@@ -11,6 +11,7 @@ env:
 # Set permissions on GITHUB_TOKEN to allow updates to GitHub Actions workflows
 permissions:
   actions: write
+  contents: write
 
 jobs:
   release-new-bor-version:
