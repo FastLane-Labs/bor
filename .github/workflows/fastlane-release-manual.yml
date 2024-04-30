@@ -105,7 +105,7 @@ jobs:
     # packager Action on master branch will build and publish a new release
     # the new release will not be tagged as latest and will be marked as pre-release
     # this step is required to tag as latest and mark as latest release
-    name: DockerHub build and push
+    name: Update new release
     runs-on: ubuntu-latest
     needs: [release-new-bor-version]
     steps:
