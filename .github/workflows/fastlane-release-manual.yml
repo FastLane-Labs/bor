@@ -52,7 +52,7 @@ jobs:
           git fetch upstream --tags
           git checkout ${{ steps.check-upstream-tags.outputs.UPSTREAM_TAG }}
           curl -o pfl.patch ${PATCH_URL}
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/$ORIGIN_PROJECT.git
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/$ORIGIN_PROJECT.git
           git status
           git remote -v
           #ls -l
