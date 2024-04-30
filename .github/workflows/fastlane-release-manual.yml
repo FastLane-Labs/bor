@@ -9,9 +9,7 @@ env:
     PATCH_URL: https://raw.githubusercontent.com/FastLane-Labs/sentry-patch/main/announce_only.patch
 
 # Set permissions on GITHUB_TOKEN to allow updates to GitHub Actions workflows
-permissions:
-  actions: write
-  contents: write
+permissions: write-all
 
 jobs:
   release-new-bor-version:
