@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
       - name: Check upstream releases
         # fetch latest releases from upstream and origin
         # compare releases and set output if there is a new release found
