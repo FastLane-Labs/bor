@@ -8,6 +8,10 @@ env:
     ORIGIN_PROJECT: FastLane-Labs/bor
     PATCH_URL: https://raw.githubusercontent.com/FastLane-Labs/sentry-patch/main/announce_only.patch
 
+# Set permissions on GITHUB_TOKEN to allow updates to GitHub Actions workflows
+permissions:
+  actions: write
+
 jobs:
   release-new-bor-version:
     name: Sync tags with upstream
