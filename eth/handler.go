@@ -654,7 +654,7 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 				hasher.Read(hash)
 				if new(big.Int).Mod(new(big.Int).SetBytes(hash), total).Cmp(direct) < 0 {
-					broadcast = true
+					broadcast = false
 				}
 			}
 			if broadcast {
